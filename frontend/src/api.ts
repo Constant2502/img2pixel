@@ -13,6 +13,8 @@ export async function convertImage(
   }
   form.append('denoise_enabled', String(params.denoise))
   form.append('denoise_strength', String(params.denoise_strength))
+  form.append('edge_preserve', String(params.edge_preserve))
+  form.append('edge_strength', String(params.edge_strength))
 
   const res = await fetch(`/api/convert`, { method: 'POST', body: form })
   if (!res.ok) throw new Error('Conversion failed')
@@ -34,6 +36,8 @@ export async function exportImage(
   }
   form.append('denoise_enabled', String(params.denoise))
   form.append('denoise_strength', String(params.denoise_strength))
+  form.append('edge_preserve', String(params.edge_preserve))
+  form.append('edge_strength', String(params.edge_strength))
 
   const res = await fetch(`/api/export`, { method: 'POST', body: form })
   if (!res.ok) throw new Error('Export failed')

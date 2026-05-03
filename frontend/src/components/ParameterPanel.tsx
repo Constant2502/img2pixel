@@ -93,6 +93,30 @@ export default function ParameterPanel({ params, onChange }: Props) {
           <span className="range-value">{params.denoise_strength.toFixed(1)}</span>
         </label>
       )}
+
+      <label className="checkbox-label">
+        <input
+          type="checkbox"
+          checked={params.edge_preserve}
+          onChange={(e) => set({ edge_preserve: e.target.checked })}
+        />
+        保留结构线
+      </label>
+
+      {params.edge_preserve && (
+        <label>
+          结构线强度
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.05}
+            value={params.edge_strength}
+            onChange={(e) => set({ edge_strength: Number(e.target.value) })}
+          />
+          <span className="range-value">{params.edge_strength.toFixed(2)}</span>
+        </label>
+      )}
     </div>
   )
 }

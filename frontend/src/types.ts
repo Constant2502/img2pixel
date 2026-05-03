@@ -13,4 +13,6 @@ export interface Params {
   max_colors: number | null
   denoise: boolean
   denoise_strength: number
+  edge_preserve: boolean
+  edge_strength: number
 }

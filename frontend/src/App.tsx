@@ -12,6 +12,8 @@ const DEFAULT_PARAMS: Params = {
   max_colors: 6,
   denoise: true,
   denoise_strength: 0.5,
+  edge_preserve: true,
+  edge_strength: 0.35,
 }
 
 export default function App() {
