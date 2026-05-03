@@ -58,13 +58,16 @@ def _process_image(
     n_colors = get_max_colors(color_mode, max_colors)
     palette_raw = extract_colors(image, n_colors)
 
-    pixel_img = pixelate(image, grid_w, grid_h, palette_raw)
+    pixel_img = pixelate(image, grid_w, grid_h, palette_raw, symmetry=False)
 
     if edge_map is not None:
         edge_grid = downscale_edge_map(edge_map, grid_w, grid_h)
-        mask = generate_outline_mask(edge_grid, threshold_percentile=80)
+        mask = generate_outline_mask(edge_grid, threshold_percentile=70)
         arr = np.array(pixel_img.convert("RGB"))
         arr = darken_outline(arr, mask, strength=edge_strength)
+        # Symmetry enforcement AFTER edges
+        from app.processors.pixelate import _enforce_symmetry as sym
+        arr = sym(arr)
         pixel_img = Image.fromarray(arr)
 
     palette_hex = [f"#{r:02x}{g:02x}{b:02x}" for r, g, b in palette_raw]
@@ -85,7 +88,7 @@ async def convert(
     denoise_enabled: bool = Form(True),
     denoise_strength: float = Form(0.5),
     edge_preserve: bool = Form(True),
-    edge_strength: float = Form(0.35),
+    edge_strength: float = Form(0.4),
 ):
     contents = await file.read()
     image = _load_image(contents)
@@ -148,7 +151,7 @@ async def export(
     denoise_enabled: bool = Form(True),
     denoise_strength: float = Form(0.5),
     edge_preserve: bool = Form(True),
-    edge_strength: float = Form(0.35),
+    edge_strength: float = Form(0.4),
 ):
     contents = await file.read()
     image = _load_image(contents)

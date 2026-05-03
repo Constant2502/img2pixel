@@ -1,4 +1,5 @@
 import math
+import numpy as np
 from PIL import Image
 
 
@@ -25,31 +26,76 @@ def calculate_grid_dimensions(
     return best
 
 
+def _luminance(rgb: np.ndarray) -> np.ndarray:
+    return 0.299 * rgb[..., 0] + 0.587 * rgb[..., 1] + 0.114 * rgb[..., 2]
+
+
+def _sample_cell(arr: np.ndarray) -> np.ndarray:
+    avg = arr.mean(axis=(0, 1))
+    lum = _luminance(arr)
+    lo, hi = lum.min(), lum.max()
+    spread = hi - lo
+    if spread > 25 and lo < 100:
+        pct = 10 if spread > 60 else 20
+        thresh = np.percentile(lum, pct)
+        dark = arr[lum <= thresh]
+        if len(dark) >= 3:
+            return dark.mean(axis=0)
+    return avg
+
+
+def _enforce_symmetry(grid: np.ndarray) -> np.ndarray:
+    h, w = grid.shape[:2]
+    mid = w // 2
+    for y in range(h):
+        for x in range(mid):
+            rx = w - 1 - x
+            dl = _luminance(grid[y, x].reshape(1, 1, 3)).item()
+            dr = _luminance(grid[y, rx].reshape(1, 1, 3)).item()
+            if dl < dr:
+                grid[y, rx] = grid[y, x]
+            else:
+                grid[y, x] = grid[y, rx]
+    return grid
+
+
 def pixelate(
     image: Image.Image,
     grid_w: int,
     grid_h: int,
     palette: list[tuple[int, int, int]],
+    symmetry: bool = True,
 ) -> Image.Image:
-    small = image.resize((grid_w, grid_h), Image.LANCZOS)
-    pixels = small.load()
-    for y in range(grid_h):
-        for x in range(grid_w):
-            r, g, b = pixels[x, y][:3]
-            pixels[x, y] = _closest_color((r, g, b), palette)
-    return small
+    arr = np.array(image.convert("RGB"))
+    h, w = arr.shape[:2]
+    out = np.zeros((grid_h, grid_w, 3), dtype=np.uint8)
+
+    for gy in range(grid_h):
+        y0 = int(gy * h / grid_h)
+        y1 = int((gy + 1) * h / grid_h)
+        for gx in range(grid_w):
+            x0 = int(gx * w / grid_w)
+            x1 = int((gx + 1) * w / grid_w)
+            cell = arr[y0:y1, x0:x1]
+            color = _sample_cell(cell)
+            out[gy, gx] = _closest_color(color, palette)
+
+    if symmetry and grid_w > 3:
+        out = _enforce_symmetry(out)
+
+    return Image.fromarray(out)
 
 
 def _closest_color(
-    color: tuple[int, int, int],
+    color: np.ndarray | tuple[int, int, int],
     palette: list[tuple[int, int, int]],
 ) -> tuple[int, int, int]:
     min_dist = float("inf")
     best = palette[0]
     for pc in palette:
-        dr = color[0] - pc[0]
-        dg = color[1] - pc[1]
-        db = color[2] - pc[2]
+        dr = float(color[0]) - pc[0]
+        dg = float(color[1]) - pc[1]
+        db = float(color[2]) - pc[2]
         dist = dr * dr + dg * dg + db * db
         if dist < min_dist:
             min_dist = dist

@@ -13,7 +13,7 @@ const DEFAULT_PARAMS: Params = {
   denoise: true,
   denoise_strength: 0.5,
   edge_preserve: true,
-  edge_strength: 0.35,
+  edge_strength: 0.4,
 }
 
 export default function App() {
